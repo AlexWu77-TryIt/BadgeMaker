@@ -1,0 +1,19 @@
+# 資料檔一律不進版控；只放行假資料與空白範本
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+!data/fake/假資料_*
+!templates/範本_*
+
+# 真實資料與輸出
+data/real/*
+!data/real/README.md
+output/
+*設定檔*.json
+
+node_modules/
+dist/
+.DS_Store
+Thumbs.db
+~$*

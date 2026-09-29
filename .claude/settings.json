@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./data/real/**)",
+      "Edit(./data/real/**)",
+      "Write(./data/real/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|MultiEdit|Write|Bash|Grep|Glob|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-real-data.js\"" }
+        ]
+      }
+    ]
+  }
+}

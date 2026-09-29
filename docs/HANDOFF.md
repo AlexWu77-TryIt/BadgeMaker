@@ -196,4 +196,26 @@ docs/       HANDOFF.md methodology.md data-cleaning-spec.md user-guide.md schema
   - 因此 AI 產出一律視為草案，須由人審核
 
 ## 13. 新對話開場建議（使用者可直接貼上）
-> 請閱讀 repo BadgeMaker 分支 `claude/salary-competitiveness-model-x1uq26` 的 `docs/HANDOFF.md`，依文件開始開發「離職洞察工具」。附上三份 Excel 的標題列：（貼上）
+> 請閱讀 repo BadgeMaker 分支 `claude/salary-competitiveness-model-x1uq26` 的 `CLAUDE.md` 與 `docs/HANDOFF.md`，依文件開始開發「離職洞察工具」。附上三份 Excel 的標題列：（貼上）
+
+部署到公司雲端資料夾、跨團隊使用的方式，見 `docs/deployment.md`。
+
+## 14. 資料防護與命名規則（已建置，開發時必須遵守）
+- **規則檔**：`CLAUDE.md`。每次對話 Claude 都會自動讀取。
+- **強制機制**：
+  - `.claude/settings.json`：禁止讀寫 `data/real/`。
+  - `.claude/hooks/guard-real-data.js`：Claude 每次使用工具前自動檢查，只看路徑與指令。以下情況直接擋下：
+    - 路徑含 `data/real`、「真實」、「正式資料」
+    - Excel／CSV 檔名不是以 `假資料_` 或 `範本_` 開頭
+    - 用萬用字元搜尋資料檔，且範圍不限於 `data/fake` 或 `templates`
+- **命名**：
+  - 假資料放在 `data/fake/假資料_*.xlsx`
+  - 空白範本放在 `templates/範本_*.xlsx`
+  - 人名用「測試員###」，主管用「M##」
+  - 每個工作表第一列加「★ 假資料，僅供測試 ★」
+- **工具端**（開發時要做）：
+  - 讀入的檔名含 `假資料_` 時，畫面頂端顯示「假資料模式」橫幅
+  - 匯出的報告與名單加註「假資料」字樣，避免真假混用
+- **版控**：`.gitignore` 預設忽略所有 Excel／CSV，只放行上述兩類命名。
+- **測試**：`tests/data-safety.test.js` 驗證防護規則，並確認 repo 內沒有不合規的資料檔。修改防護機制後必須重跑。
+- **開發環境需求**：Node.js（防護腳本與測試都用 Node 執行）。
