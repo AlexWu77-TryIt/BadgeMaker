@@ -1,0 +1,434 @@
+<title>離職洞察儀表板</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:">
+<style>
+/* Layout: 頁首＋分頁列，下方單欄內容；每頁先摘要後細節 */
+:root{
+  --page:#f5f6f3; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#7a7872;
+  --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#eb6834; --accent:#1c5cab;
+  --good:#006300; --warn-bg:#fdf1d6; --warn-ink:#7a5200; --crit:#d03b3b; --crit-bg:#fbe5e4; --crit-ink:#9b1f1f;
+  --q1:#cde2fb; --q2:#9ec5f4; --q3:#6da7ec; --q4:#3987e5; --q5:#256abf; --q6:#184f95;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0f0f0e; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#98968f;
+  --grid:#2c2c2a; --axis:#46463f; --ring:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926; --accent:#86b6ef;
+  --good:#0ca30c; --warn-bg:#3a2e10; --warn-ink:#fab219; --crit:#e66767; --crit-bg:#3a1b1b; --crit-ink:#ff9d9d;
+  --q1:#1f2c3d; --q2:#184f95; --q3:#1c5cab; --q4:#256abf; --q5:#3987e5; --q6:#6da7ec;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --page:#0f0f0e; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#98968f;
+  --grid:#2c2c2a; --axis:#46463f; --ring:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926; --accent:#86b6ef;
+  --good:#0ca30c; --warn-bg:#3a2e10; --warn-ink:#fab219; --crit:#e66767; --crit-bg:#3a1b1b; --crit-ink:#ff9d9d;
+  --q1:#1f2c3d; --q2:#184f95; --q3:#1c5cab; --q4:#256abf; --q5:#3987e5; --q6:#6da7ec;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--ink);font:15px/1.6 var(--font);margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:20px 48px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+h1{font-size:26px;line-height:1.25;margin:0;letter-spacing:.01em;text-wrap:balance}
+.sub{color:var(--ink-2);font-size:13px;margin-top:4px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--warn-bg);color:var(--warn-ink);font-size:12px;font-weight:600;letter-spacing:.04em}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--grid);margin-bottom:20px;scrollbar-width:thin}
+.tabs button{flex:0 0 auto;font:inherit;font-size:14px;background:none;border:0;border-bottom:2px solid transparent;color:var(--ink-2);padding:10px 12px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.tabs button:hover{color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.panel{display:grid;gap:20px}
+.q{font-size:13px;color:var(--muted);letter-spacing:.06em;margin:0}
+h2{font-size:20px;margin:2px 0 0;text-wrap:balance}
+h3{font-size:15px;margin:0 0 10px}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:18px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.kpi .lab{color:var(--ink-2);font-size:13px}
+.kpi .val{font-size:30px;font-weight:700;line-height:1.2;margin-top:4px}
+.kpi .val small{font-size:15px;font-weight:500;color:var(--ink-2)}
+.delta{font-size:13px;margin-top:4px;color:var(--ink-2)}
+.delta b{font-weight:600}.good{color:var(--good)}.bad{color:var(--crit)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.summary{margin:0;padding-left:1.2em;display:grid;gap:6px;max-width:70ch}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font:12px var(--font)}
+.chart .lbl{fill:var(--ink);font-weight:600}
+.chart .lbl2{fill:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--ink-2);margin-top:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend i.line{height:2px;border-radius:0;vertical-align:4px;width:16px}
+.legend i.dash{height:0;border-top:2px dashed var(--muted);border-radius:0;vertical-align:4px;width:16px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);white-space:nowrap}
+th{color:var(--ink-2);font-weight:600;font-size:13px}
+td.num,th.num{text-align:right}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
+.pill.crit{background:var(--crit-bg);color:var(--crit-ink)}
+.pill.warn{background:var(--warn-bg);color:var(--warn-ink)}
+.pill.ok{background:transparent;color:var(--ink-2);border:1px solid var(--grid)}
+.heat td.c{text-align:center;min-width:64px;font-weight:600}
+.heat td.mask{color:var(--muted);font-weight:400;font-size:12px}
+.note{font-size:12.5px;color:var(--muted);border-top:1px dashed var(--grid);padding-top:10px;margin:0;max-width:90ch}
+.callout{border-left:3px solid var(--accent);padding:6px 12px;background:var(--surface);border-radius:0 8px 8px 0;max-width:75ch}
+.big{font-size:34px;font-weight:700;line-height:1.1}
+pre.pack{margin:0;white-space:pre-wrap;font:13px/1.65 var(--mono);background:var(--page);border:1px solid var(--grid);border-radius:8px;padding:14px;max-height:420px;overflow:auto}
+.btn{font:inherit;font-size:14px;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);cursor:pointer;font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.form label{display:grid;gap:6px;font-size:13px;color:var(--ink-2)}
+.form input{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--axis);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;font-variant-numeric:tabular-nums}
+.calc{display:grid;gap:4px;font-variant-numeric:tabular-nums;color:var(--ink-2);font-size:14px}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12.5px;line-height:1.5;padding:6px 10px;border-radius:6px;max-width:260px;z-index:10;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+[data-tip]{cursor:default}
+@media (prefers-reduced-motion:no-preference){.tabs button{transition:color .15s,border-color .15s}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>離職洞察儀表板</h1>
+      <div class="sub">資料期間 2025/10–2026/09 ｜ 自願離職 ｜ 在職約 620 人、42 個主管團隊</div>
+    </div>
+    <span class="badge">樣品：所有數字皆為虛構</span>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="儀表板頁面">
+    <button role="tab" data-tab="overview">總覽</button>
+    <button role="tab" data-tab="hotspot">主管熱點</button>
+    <button role="tab" data-tab="reasons">離職原因</button>
+    <button role="tab" data-tab="onboard">新人滿月</button>
+    <button role="tab" data-tab="action">行動追蹤</button>
+    <button role="tab" data-tab="aipack">AI 策略包</button>
+    <button role="tab" data-tab="roi">效益試算</button>
+  </nav>
+
+  <!-- 1 總覽 -->
+  <section class="panel" id="p-overview" role="tabpanel">
+    <div><p class="q">整體狀況是變好還是變壞？</p><h2>本季總覽</h2></div>
+    <div class="kpis">
+      <div class="card kpi"><div class="lab">自願離職率（年化）</div><div class="val">18.4%</div><div class="delta"><b class="good">▼ 0.3 個百分點</b>　較上季</div></div>
+      <div class="card kpi"><div class="lab">熱點主管團隊</div><div class="val">2 <small>個</small></div><div class="delta"><b class="bad">▲ 另有 1 個觀察中</b>　超出 99.8% 界線</div></div>
+      <div class="card kpi"><div class="lab">新人 90 天流失率</div><div class="val">21.0%</div><div class="delta"><b class="bad">▲ 1.2 個百分點</b>　較上季</div></div>
+      <div class="card kpi"><div class="lab">滿月回饋平均</div><div class="val">3.68 <small>/ 5</small></div><div class="delta"><b class="bad">▼ 0.05</b>　較上季</div></div>
+    </div>
+    <div class="two">
+      <div class="card">
+        <h3>自願離職率（年化，按季）</h3>
+        <svg class="chart" id="c-trend" viewBox="0 0 520 260" role="img" aria-label="近八季年化自願離職率折線圖"></svg>
+      </div>
+      <div class="card">
+        <h3>本月重點（依規則自動產生）</h3>
+        <ol class="summary">
+          <li>整體離職率連續 3 季下降，但<b>新人 90 天流失率回升</b>，問題集中在到職初期。</li>
+          <li><b>M07（北區 B 據點）</b>與 <b>M19（中區客服）</b>超出 99.8% 界線，實際離職約為預期的 2.6 與 2.9 倍。</li>
+          <li>兩個熱點團隊的主要離職主題為「主管／管理」與「工時排班」，和全公司以「薪資福利」為首不同。</li>
+          <li>中區門市新人的「主管支持」面向平均 2.8 分，低於關懷門檻 3.0。</li>
+          <li>3 月對 M07 的主管輔導，介入後離職率較對照組多降 18 個百分點（見行動追蹤）。</li>
+        </ol>
+      </div>
+    </div>
+    <p class="note">被列為熱點代表需要關注，不等於主管有過失。人數少於 5 人的團隊不排名。</p>
+  </section>
+
+  <!-- 2 主管熱點 -->
+  <section class="panel" id="p-hotspot" role="tabpanel" hidden>
+    <div><p class="q">事前：問題集中在哪幾個團隊？</p><h2>主管熱點（漏斗圖）</h2></div>
+    <div class="card">
+      <h3>各主管團隊：實際 ÷ 預期離職（O/E）與團隊規模</h3>
+      <svg class="chart" id="c-funnel" viewBox="0 0 760 380" role="img" aria-label="漏斗圖：42 個主管團隊的 O/E，2 個超出 99.8% 界線"></svg>
+      <div class="legend">
+        <span><i style="background:var(--s1)"></i>主管團隊</span>
+        <span><i style="background:var(--crit)"></i>熱點（超出 99.8%）</span>
+        <span><i style="background:var(--warn-ink)"></i>觀察（超出 95%）</span>
+        <span><i class="line" style="background:var(--muted)"></i>99.8% 界線</span>
+        <span><i class="dash"></i>95% 界線</span>
+      </div>
+    </div>
+    <div class="card scroll">
+      <h3>需要關注的團隊</h3>
+      <table>
+        <thead><tr><th>主管</th><th>單位</th><th class="num">平均人數</th><th class="num">實際離職</th><th class="num">預期離職</th><th class="num">O/E</th><th>主要離職主題</th><th>狀態</th></tr></thead>
+        <tbody>
+          <tr><td>M07</td><td>北區 B 據點</td><td class="num">22</td><td class="num">11</td><td class="num">4.2</td><td class="num">2.6</td><td>主管／管理 45%、工時排班 27%</td><td><span class="pill crit">● 熱點</span></td></tr>
+          <tr><td>M19</td><td>中區客服</td><td class="num">15</td><td class="num">8</td><td class="num">2.8</td><td class="num">2.9</td><td>工時排班 50%、主管／管理 25%</td><td><span class="pill crit">● 熱點</span></td></tr>
+          <tr><td>M31</td><td>南區 A 據點</td><td class="num">30</td><td class="num">10</td><td class="num">5.5</td><td class="num">1.8</td><td>職涯發展 40%</td><td><span class="pill warn">▲ 觀察</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">預期離職：依團隊的職類與年資組成，套用全公司離職率推算（間接標準化）。依據：Hoffman &amp; Tadelis (2021, <i>Journal of Political Economy</i>)；漏斗圖方法 Spiegelhalter (2005, <i>Statistics in Medicine</i>)。</p>
+  </section>
+
+  <!-- 3 離職原因 -->
+  <section class="panel" id="p-reasons" role="tabpanel" hidden>
+    <div><p class="q">大家為什麼離開？各單位原因一樣嗎？</p><h2>離職原因</h2></div>
+    <div class="card scroll">
+      <h3>各單位離職主題占比（%，HR 標註）</h3>
+      <table class="heat" id="t-heat"></table>
+      <div class="legend" id="heat-legend"></div>
+    </div>
+    <div class="callout">全公司第一名是「薪資福利」，但北區門市與客服中心的第一名是「主管／管理」與「工時排班」。只調薪，解決不了這兩個單位的問題。</div>
+    <p class="note">離職原因可能是場面話，反映的是員工願意說出的原因。離職人數少於 5 人的單位不顯示。依據：Sull, Sull &amp; Zweig (2022, <i>MIT Sloan Management Review</i>)，文化與主管因素預測離職的能力遠高於薪資。</p>
+  </section>
+
+  <!-- 4 新人滿月 -->
+  <section class="panel" id="p-onboard" role="tabpanel" hidden>
+    <div><p class="q">新人一個月時的狀況，能不能提早預警流失？</p><h2>新人滿月回饋</h2></div>
+    <div class="two">
+      <div class="card">
+        <h3>四個適應面向（全公司平均，5 分量表）</h3>
+        <svg class="chart" id="c-dims" viewBox="0 0 480 230" role="img" aria-label="四個面向平均分數長條圖"></svg>
+        <div class="legend"><span><i class="dash"></i>關懷門檻 3.0</span></div>
+      </div>
+      <div class="card">
+        <h3>滿月低分組 vs 高分組：之後還留著的比例</h3>
+        <svg class="chart" id="c-ret" viewBox="0 0 480 230" role="img" aria-label="低分組與高分組 90 天與 180 天留任率"></svg>
+        <div class="legend"><span><i style="background:var(--s2)"></i>低分組（n=38）</span><span><i style="background:var(--s1)"></i>高分組（n=112）</span></div>
+      </div>
+    </div>
+    <div class="callout">滿月低分的新人，180 天後只剩 55% 還在職，高分組是 86%。這代表滿月回饋可以當作預警：HR 在第 1 個月就能找出需要關懷的人。本月關懷名單 9 人，已另存於 HR 限定資料夾。</div>
+    <p class="note">依據：Bauer et al. (2007, <i>Journal of Applied Psychology</i>) 後設分析：角色清晰、自我效能、社會接納可預測新人留任；Allen (2006, <i>Journal of Management</i>)。實際預警效果需以公司資料累積驗證。</p>
+  </section>
+
+  <!-- 5 行動追蹤 -->
+  <section class="panel" id="p-action" role="tabpanel" hidden>
+    <div><p class="q">事後：我們做的措施到底有沒有效？</p><h2>行動追蹤</h2></div>
+    <div class="two">
+      <div class="card">
+        <h3>A-003 主管輔導 M07（2026/03 介入）</h3>
+        <svg class="chart" id="c-did" viewBox="0 0 480 260" role="img" aria-label="介入前後離職率：M07 團隊與對照組"></svg>
+        <div class="legend"><span><i class="line" style="background:var(--s1)"></i>M07 團隊</span><span><i class="line" style="background:var(--s2)"></i>對照組（同職類、未介入）</span></div>
+      </div>
+      <div class="card">
+        <h3>怎麼判斷有沒有效</h3>
+        <div class="calc">
+          <div>M07 團隊變化：29% − 48% ＝ <b>−19 個百分點</b></div>
+          <div>對照組變化：19% − 20% ＝ −1 個百分點</div>
+        </div>
+        <p style="margin:14px 0 4px;color:var(--ink-2);font-size:13px">扣掉大環境的影響後，這項措施的效果</p>
+        <div class="big good">−18 個百分點</div>
+        <p style="color:var(--ink-2);font-size:13px;margin:10px 0 0;max-width:48ch">只看 M07 自己會高估效果，因為同期全公司離職率也在下降。和對照組比較（差異中之差異法）才能算出措施本身的效果。</p>
+      </div>
+    </div>
+    <div class="card scroll">
+      <h3>行動登錄表</h3>
+      <table>
+        <thead><tr><th>編號</th><th>日期</th><th>對象</th><th>行動類型</th><th class="num">效果（對照後）</th><th>狀態</th></tr></thead>
+        <tbody>
+          <tr><td>A-001</td><td>2026/01</td><td>中區客服</td><td>排班調整</td><td class="num good">−6 個百分點</td><td><span class="pill ok">✓ 觀察完成</span></td></tr>
+          <tr><td>A-003</td><td>2026/03</td><td>M07 北區 B 據點</td><td>主管輔導</td><td class="num good">−18 個百分點</td><td><span class="pill ok">✓ 觀察完成</span></td></tr>
+          <tr><td>A-005</td><td>2026/07</td><td>南區門市</td><td>新人導師制</td><td class="num">—</td><td><span class="pill warn">◷ 追蹤中（剩 4 個月）</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">效果＝介入前後 6 個月的年化自願離職率變化，減去同職類未介入單位的同期變化。觀察期不足 6 個月顯示「追蹤中」。</p>
+  </section>
+
+  <!-- 6 AI 策略包 -->
+  <section class="panel" id="p-aipack" role="tabpanel" hidden>
+    <div><p class="q">下一步該怎麼做？</p><h2>AI 策略彙總包</h2></div>
+    <div class="callout">工具本身不連任何網路，也不呼叫 AI。下方內容只有彙總數字，沒有工號、姓名、原文，人數少於 5 人的數字已遮蔽。HR 確認後，貼到公司核准的 AI 工具，產出的策略只當作草案，由 HR 審核。</div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px"><h3 style="margin:0">預覽</h3><button class="btn" id="copy">複製內容</button></div>
+      <pre class="pack" id="pack">【背景】台灣企業，在職約 620 人，42 個主管團隊。以下為 2025/10–2026/09 彙總統計。
+
+【整體】年化自願離職率 18.4%（上季 18.7%）；新人 90 天流失率 21.0%（上季 19.8%）。
+
+【熱點團隊】
+- 團隊 A（門市，平均 22 人）：O/E 2.6；主題：主管／管理 45%、工時排班 27%
+- 團隊 B（客服，平均 15 人）：O/E 2.9；主題：工時排班 50%、主管／管理 25%
+
+【新人滿月】面向平均：角色清晰 3.9、自我效能 3.8、社會接納 3.6、主管支持 3.4。
+低分組 180 天留任 55%，高分組 86%。中區門市主管支持 2.8。
+
+【已執行行動】主管輔導（團隊 A）效果 −18 個百分點；排班調整（客服）−6 個百分點。
+
+【請你】
+1. 依據上述數據，提出 3 個可能原因的假設，並說明哪些數據支持或不支持。
+2. 提出 3 個策略選項，各附：做法、所需資源、預期影響的指標、建議觀察期。
+3. 標明哪些推論不確定、需要再收集什麼資料。
+4. 盡量引用人力資源管理的研究或實務依據。</pre>
+    </div>
+    <p class="note">依據與限制：Dell'Acqua et al. (2023, HBS Working Paper)。顧問使用 AI 處理能力範圍內的任務，品質提升約 40%；但遇到超出範圍的題目，正確率反而下降約 19 個百分點。所以 AI 產出一律由人審核。</p>
+  </section>
+
+  <!-- 7 效益試算 -->
+  <section class="panel" id="p-roi" role="tabpanel" hidden>
+    <div><p class="q">值不值得投入？</p><h2>效益試算</h2></div>
+    <div class="card">
+      <div class="form">
+        <label for="n">每年減少的自願離職人數<input id="n" type="number" min="0" step="1" value="8"></label>
+        <label for="sal">平均年薪（元）<input id="sal" type="number" min="0" step="10000" value="520000"></label>
+        <label for="pct">替換成本占年薪比例（%）<input id="pct" type="number" min="0" max="200" step="1" value="20"></label>
+        <label for="hrs">HR 每月節省的報表工時<input id="hrs" type="number" min="0" step="1" value="16"></label>
+        <label for="rate">HR 時薪（元）<input id="rate" type="number" min="0" step="10" value="400"></label>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="card kpi"><div class="lab">降低離職省下的替換成本</div><div class="val" id="o1">—</div><div class="delta" id="o1f"></div></div>
+      <div class="card kpi"><div class="lab">HR 報表工時節省</div><div class="val" id="o2">—</div><div class="delta" id="o2f"></div></div>
+      <div class="card kpi"><div class="lab">合計（每年）</div><div class="val" id="o3">—</div><div class="delta">不含缺人期間的加班與服務品質影響</div></div>
+    </div>
+    <p class="note">替換成本預設 20%：Boushey &amp; Glynn (2012, Center for American Progress) 整合 30 篇研究，一般職位的離職替換成本約為年薪的 2 成。本頁為示意，實際效益需以上線 6–12 個月的前後數據計算。</p>
+  </section>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+(function(){
+  var NS="http://www.w3.org/2000/svg";
+  function el(tag,attrs,parent,text){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;if(parent)parent.appendChild(e);return e}
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+
+  /* tooltip */
+  var tip=document.getElementById("tip");
+  function showTip(e,t){tip.textContent="";t.split("\n").forEach(function(line,i){if(i)tip.appendChild(document.createElement("br"));tip.appendChild(document.createTextNode(line))});tip.hidden=false;moveTip(e)}
+  function moveTip(e){var x=e.clientX+14,y=e.clientY+14;var w=tip.offsetWidth,h=tip.offsetHeight;if(x+w>innerWidth-8)x=e.clientX-w-14;if(y+h>innerHeight-8)y=e.clientY-h-14;tip.style.left=x+"px";tip.style.top=y+"px"}
+  document.addEventListener("pointerover",function(e){var t=e.target.closest&&e.target.closest("[data-tip]");if(t)showTip(e,t.getAttribute("data-tip"))});
+  document.addEventListener("pointermove",function(e){if(!tip.hidden)moveTip(e)});
+  document.addEventListener("pointerout",function(e){var t=e.target.closest&&e.target.closest("[data-tip]");if(t)tip.hidden=true});
+
+  /* trend line */
+  function drawTrend(){
+    var svg=document.getElementById("c-trend");svg.textContent="";
+    var q=["24Q4","25Q1","25Q2","25Q3","25Q4","26Q1","26Q2","26Q3"],v=[21.3,20.8,20.1,19.6,19.9,19.1,18.7,18.4];
+    var L=44,R=500,T=16,B=226,y0=16,y1=22;
+    function X(i){return L+i*(R-L)/(q.length-1)}function Y(d){return B-(d-y0)/(y1-y0)*(B-T)}
+    for(var g=16;g<=22;g+=2){el("line",{x1:L,x2:R,y1:Y(g),y2:Y(g),stroke:css("--grid"),"stroke-width":1},svg);el("text",{x:L-8,y:Y(g)+4,"text-anchor":"end"},svg,g+"%")}
+    q.forEach(function(s,i){el("text",{x:X(i),y:B+22,"text-anchor":"middle"},svg,s)});
+    var d=v.map(function(x,i){return(i?"L":"M")+X(i)+" "+Y(x)}).join(" ");
+    el("path",{d:d+" L"+X(7)+" "+B+" L"+X(0)+" "+B+" Z",fill:css("--s1"),"fill-opacity":.08},svg);
+    el("path",{d:d,fill:"none",stroke:css("--s1"),"stroke-width":2,"stroke-linejoin":"round"},svg);
+    v.forEach(function(x,i){
+      var last=i===v.length-1;
+      el("circle",{cx:X(i),cy:Y(x),r:last?5:3.5,fill:css("--s1"),stroke:css("--surface"),"stroke-width":2},svg);
+      el("rect",{x:X(i)-28,y:T,width:56,height:B-T,fill:"transparent","data-tip":"20"+q[i].replace("Q"," 年第 ")+" 季\n年化自願離職率 "+x+"%"},svg);
+    });
+    el("text",{x:X(7),y:Y(18.4)-12,"text-anchor":"end",class:"lbl"},svg,"18.4%");
+  }
+
+  /* funnel plot */
+  function rng(seed){return function(){seed=(seed*16807)%2147483647;return(seed-1)/2147483646}}
+  function drawFunnel(){
+    var svg=document.getElementById("c-funnel");svg.textContent="";
+    var L=52,R=740,T=16,B=330,xmax=45,ymax=4,p=0.184;
+    function X(s){return L+s/xmax*(R-L)}function Y(o){return B-Math.min(o,ymax)/ymax*(B-T)}
+    for(var g=0;g<=4;g++){el("line",{x1:L,x2:R,y1:Y(g),y2:Y(g),stroke:css("--grid")},svg);el("text",{x:L-8,y:Y(g)+4,"text-anchor":"end"},svg,g.toFixed(1))}
+    for(var s=0;s<=45;s+=5)el("text",{x:X(s),y:B+20,"text-anchor":"middle"},svg,s);
+    el("text",{x:(L+R)/2,y:B+42,"text-anchor":"middle",class:"lbl2"},svg,"團隊平均人數");
+    el("text",{x:14,y:(T+B)/2,"text-anchor":"middle",transform:"rotate(-90 14 "+(T+B)/2+")",class:"lbl2"},svg,"O/E（實際 ÷ 預期）");
+    el("line",{x1:L,x2:R,y1:Y(1),y2:Y(1),stroke:css("--axis"),"stroke-width":1.5},svg);
+    el("text",{x:L+6,y:Y(1)-6},svg,"1.0 = 符合預期");
+    [[3.09,"none"],[1.96,"5 4"]].forEach(function(z){
+      var up="",lo="";for(var s=4;s<=45;s+=.5){var e=s*p,h=z[0]/Math.sqrt(e);up+=(up?"L":"M")+X(s)+" "+Y(1+h)+" ";lo+=(lo?"L":"M")+X(s)+" "+Y(Math.max(0,1-h))+" "}
+      [up,lo].forEach(function(d){el("path",{d:d,fill:"none",stroke:css("--muted"),"stroke-width":1.2,"stroke-dasharray":z[1],"clip-path":"url(#fclip)"},svg)});
+    });
+    var cp=el("clipPath",{id:"fclip"},svg);el("rect",{x:L,y:T,width:R-L,height:B-T},cp);
+    var r=rng(42),pts=[];
+    for(var i=0;i<39;i++){var s=6+r()*34,e=s*p,z=(r()+r()+r()-1.5)*1.3,o=1+z*1.4/Math.sqrt(e)*.62;o=Math.max(.08,Math.min(o,1+1.8/Math.sqrt(e)));pts.push({id:"M"+String(i<6?i+1:i+2).padStart(2,"0"),s:s,o:o,k:"n"})}
+    pts=pts.filter(function(x){return["M07","M19","M31"].indexOf(x.id)<0});
+    pts.push({id:"M07",s:22,o:2.6,k:"c",u:"北區 B 據點"},{id:"M19",s:15,o:2.9,k:"c",u:"中區客服"},{id:"M31",s:30,o:1.8,k:"w",u:"南區 A 據點"});
+    pts.forEach(function(d){
+      var col=d.k==="c"?css("--crit"):d.k==="w"?css("--warn-ink"):css("--s1");
+      var g=el("g",{"data-tip":d.id+(d.u?"（"+d.u+"）":"")+"\n平均人數 "+d.s.toFixed(0)+"\nO/E "+d.o.toFixed(2)+(d.k==="c"?"\n超出 99.8% 界線":d.k==="w"?"\n超出 95% 界線":"")},svg);
+      el("circle",{cx:X(d.s),cy:Y(d.o),r:12,fill:"transparent"},g);
+      el("circle",{cx:X(d.s),cy:Y(d.o),r:d.k==="n"?5:7,fill:col,stroke:css("--surface"),"stroke-width":2,"fill-opacity":d.k==="n"?.85:1},g);
+      if(d.k!=="n")el("text",{x:X(d.s)+11,y:Y(d.o)+4,class:"lbl"},svg,d.id);
+    });
+  }
+
+  /* heatmap table */
+  function drawHeat(){
+    var th=["主管／管理","薪資福利","工時排班","職涯發展","工作壓力","公司文化","個人家庭","其他"];
+    var rows=[["北區門市",41,[34,18,16,9,8,5,7,3]],["中區門市",33,[20,26,14,12,10,6,9,3]],["南區門市",29,[14,31,10,17,9,5,11,3]],["客服中心",24,[21,13,38,8,12,3,4,1]],["車輛整備",18,[11,33,17,11,14,3,8,3]],["總部行政",4,null],["全公司",149,[22,24,19,11,10,5,7,2]]];
+    var steps=["--q1","--q2","--q3","--q4","--q5","--q6"];
+    var t=document.getElementById("t-heat");t.textContent="";
+    var hr=t.insertRow();["單位","離職人數"].concat(th).forEach(function(h,i){var c=document.createElement("th");c.textContent=h;if(i===1)c.className="num";hr.appendChild(c)});
+    rows.forEach(function(r){
+      var tr=t.insertRow();var a=tr.insertCell();a.textContent=r[0];if(r[0]==="全公司")a.style.fontWeight="700";
+      var b=tr.insertCell();b.textContent=r[1];b.className="num";
+      if(!r[2]){var m=tr.insertCell();m.colSpan=8;m.className="c mask";m.textContent="人數少於 5 人，不顯示";return}
+      r[2].forEach(function(v,i){var c=tr.insertCell();c.className="c";var k=Math.min(5,Math.floor(v/7));c.style.background="var("+steps[k]+")";c.style.color=k>=3?"#ffffff":"var(--ink)";if(document.documentElement.getAttribute("data-theme")==="dark"||(!document.documentElement.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme: dark)").matches))c.style.color=k>=2?"#ffffff":"var(--ink-2)";c.textContent=v;c.setAttribute("data-tip",r[0]+"｜"+th[i]+"\n占該單位離職 "+v+"%")});
+    });
+    var lg=document.getElementById("heat-legend");lg.textContent="";
+    ["0–6%","7–13%","14–20%","21–27%","28–34%","35% 以上"].forEach(function(s,i){var sp=document.createElement("span");var ic=document.createElement("i");ic.style.background="var("+steps[i]+")";sp.appendChild(ic);sp.appendChild(document.createTextNode(s));lg.appendChild(sp)});
+  }
+
+  /* onboarding dims */
+  function drawDims(){
+    var svg=document.getElementById("c-dims");svg.textContent="";
+    var d=[["角色清晰",3.9],["自我效能",3.8],["社會接納",3.6],["主管支持",3.4]];
+    var L=84,R=440,T=10,rowH=46;function X(v){return L+v/5*(R-L)}
+    for(var g=0;g<=5;g++){el("line",{x1:X(g),x2:X(g),y1:T,y2:T+rowH*4,stroke:css("--grid")},svg);el("text",{x:X(g),y:T+rowH*4+18,"text-anchor":"middle"},svg,g)}
+    d.forEach(function(r,i){var y=T+i*rowH+10;
+      el("text",{x:L-10,y:y+17,"text-anchor":"end",class:"lbl2"},svg,r[0]);
+      el("rect",{x:L,y:y,width:X(r[1])-L,height:24,rx:4,fill:css("--s1"),"data-tip":r[0]+"\n平均 "+r[1]+" 分（n=150）"},svg);
+      el("text",{x:X(r[1])+8,y:y+17,class:"lbl"},svg,r[1].toFixed(1));
+    });
+    el("line",{x1:X(3),x2:X(3),y1:T-4,y2:T+rowH*4,stroke:css("--crit"),"stroke-width":1.5,"stroke-dasharray":"5 4"},svg);
+  }
+
+  /* retention grouped bars */
+  function drawRet(){
+    var svg=document.getElementById("c-ret");svg.textContent="";
+    var g=[["到職 90 天",68,92],["到職 180 天",55,86]];
+    var L=44,R=460,T=14,B=196;function Y(v){return B-v/100*(B-T)}
+    for(var t=0;t<=100;t+=25){el("line",{x1:L,x2:R,y1:Y(t),y2:Y(t),stroke:css("--grid")},svg);el("text",{x:L-8,y:Y(t)+4,"text-anchor":"end"},svg,t+"%")}
+    var gw=(R-L)/2;
+    g.forEach(function(r,i){var cx=L+gw*i+gw/2,bw=54;
+      [[r[1],css("--s2"),"低分組"],[r[2],css("--s1"),"高分組"]].forEach(function(b,j){var x=cx-bw-1+j*(bw+2);
+        el("path",{d:"M"+x+" "+B+" V"+(Y(b[0])+4)+" q0 -4 4 -4 H"+(x+bw-4)+" q4 0 4 4 V"+B+" Z",fill:b[1],"data-tip":r[0]+"｜"+b[2]+"\n仍在職 "+b[0]+"%"},svg);
+        el("text",{x:x+bw/2,y:Y(b[0])-6,"text-anchor":"middle",class:"lbl"},svg,b[0]+"%");
+      });
+      el("text",{x:cx,y:B+20,"text-anchor":"middle",class:"lbl2"},svg,r[0]);
+    });
+    el("line",{x1:L,x2:R,y1:B,y2:B,stroke:css("--axis")},svg);
+  }
+
+  /* DiD */
+  function drawDid(){
+    var svg=document.getElementById("c-did");svg.textContent="";
+    var L=48,R=400,T=18,B=210;function Y(v){return B-v/60*(B-T)}var xs=[L+60,R-60];
+    for(var t=0;t<=60;t+=20){el("line",{x1:L,x2:R+60,y1:Y(t),y2:Y(t),stroke:css("--grid")},svg);el("text",{x:L-8,y:Y(t)+4,"text-anchor":"end"},svg,t+"%")}
+    ["介入前 6 個月","介入後 6 個月"].forEach(function(s,i){el("text",{x:xs[i],y:B+22,"text-anchor":"middle",class:"lbl2"},svg,s)});
+    el("line",{x1:(xs[0]+xs[1])/2,x2:(xs[0]+xs[1])/2,y1:T,y2:B,stroke:css("--axis"),"stroke-dasharray":"3 4"},svg);
+    el("text",{x:(xs[0]+xs[1])/2+6,y:T+10},svg,"2026/03 介入");
+    [[48,29,css("--s1"),"M07 團隊"],[20,19,css("--s2"),"對照組"]].forEach(function(r){
+      el("line",{x1:xs[0],y1:Y(r[0]),x2:xs[1],y2:Y(r[1]),stroke:r[2],"stroke-width":2},svg);
+      [r[0],r[1]].forEach(function(v,i){el("circle",{cx:xs[i],cy:Y(v),r:5,fill:r[2],stroke:css("--surface"),"stroke-width":2,"data-tip":r[3]+"｜"+(i?"介入後":"介入前")+"\n年化自願離職率 "+v+"%"},svg);
+        el("text",{x:xs[i]+(i?10:-10),y:Y(v)+4,"text-anchor":i?"start":"end",class:"lbl"},svg,v+"%")});
+      el("text",{x:xs[1]+44,y:Y(r[1])+4,class:"lbl2"},svg,r[3]);
+    });
+  }
+
+  function drawAll(){drawTrend();drawFunnel();drawHeat();drawDims();drawRet();drawDid()}
+  drawAll();
+  try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",drawAll)}catch(e){}
+  new MutationObserver(drawAll).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+  /* tabs */
+  var tabs=[].slice.call(document.querySelectorAll(".tabs button"));
+  function select(id){if(!document.getElementById("p-"+id))id="overview";tabs.forEach(function(b){var on=b.dataset.tab===id;b.setAttribute("aria-selected",on);document.getElementById("p-"+b.dataset.tab).hidden=!on});tip.hidden=true}
+  tabs.forEach(function(b){b.addEventListener("click",function(){select(b.dataset.tab);try{history.replaceState(null,"","#"+b.dataset.tab)}catch(e){}})});
+  select((location.hash||"").slice(1));
+  addEventListener("hashchange",function(){select(location.hash.slice(1))});
+
+  /* copy */
+  document.getElementById("copy").addEventListener("click",function(){
+    var pre=document.getElementById("pack"),btn=this;
+    function sel(){var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent="已選取，請按 Ctrl+C"}
+    try{navigator.clipboard.writeText(pre.textContent).then(function(){btn.textContent="已複製"},sel)}catch(e){sel()}
+  });
+
+  /* ROI */
+  var ids=["n","sal","pct","hrs","rate"];
+  function fmt(v){return Math.round(v).toLocaleString("zh-TW")+" 元"}
+  function calc(){var g=function(i){var v=parseFloat(document.getElementById(i).value);return isFinite(v)&&v>=0?v:0};
+    var a=g("n")*g("sal")*g("pct")/100,b=g("hrs")*g("rate")*12;
+    document.getElementById("o1").textContent=fmt(a);document.getElementById("o1f").textContent=g("n")+" 人 × "+g("sal").toLocaleString("zh-TW")+" 元 × "+g("pct")+"%";
+    document.getElementById("o2").textContent=fmt(b);document.getElementById("o2f").textContent=g("hrs")+" 小時 × "+g("rate")+" 元 × 12 個月";
+    document.getElementById("o3").textContent=fmt(a+b)}
+  ids.forEach(function(i){document.getElementById(i).addEventListener("input",calc)});calc();
+})();
+</script>
