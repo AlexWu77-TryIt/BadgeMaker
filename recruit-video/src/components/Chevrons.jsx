@@ -1,11 +1,11 @@
 import {useCurrentFrame} from 'remotion';
 
 // 箭頭列：＞＞＞＞ 依序亮起、往前推進
-export const Chevrons = ({count = 4, size = 80, color = '#fff', gap = 10, style, speed = 0.55, opacity = 1}) => {
+export const Chevrons = ({count = 4, size = 80, color = '#fff', gap = 10, style, speed = 0.55, opacity = 1, still = false}) => {
   const frame = useCurrentFrame();
   const w = size * 0.75;
   const step = w * 0.62 + gap;
-  const shift = ((frame * size) / 12) % step;
+  const shift = still ? 0 : ((frame * size) / 12) % step;
   return (
     <svg
       width={step * count + w}
@@ -15,7 +15,7 @@ export const Chevrons = ({count = 4, size = 80, color = '#fff', gap = 10, style,
     >
       {Array.from({length: count}, (_, i) => {
         const x = i * step + shift;
-        const pulse = 0.3 + 0.7 * ((Math.sin(frame * speed - i * 0.9) + 1) / 2);
+        const pulse = still ? 0.4 + (0.6 * (i + 1)) / count : 0.3 + 0.7 * ((Math.sin(frame * speed - i * 0.9) + 1) / 2);
         const t = w * 0.38;
         const pts = [
           [x, 0],

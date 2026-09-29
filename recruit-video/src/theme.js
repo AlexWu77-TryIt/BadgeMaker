@@ -17,7 +17,9 @@ export const SAFE_BOTTOM = H - 380;
 export const T = {
   opening: 0, // 0–2 秒
   words: 60, // 2–6 秒
-  wordLen: 39, // 每個字約 1.3 秒
+  wordLen: 40, // 每個字約 1.3 秒（40 格＝4 拍）
+  infoStagger: 40, // 三組資訊的進場間隔（4 拍）
+  banner: 360, // 12 秒：橘色橫幅展開
   info: 180, // 6–11 秒
   sprint: 330, // 11–13 秒
   end: 390, // 13–15 秒
@@ -27,3 +29,8 @@ export const T = {
 // 影片中出現的全部文字（用來預先載入字型，確保不缺字）
 export const ALL_TEXT =
   '你的第一站，想去哪？成長挑戰轉型60+職缺旅遊補助每年最高30,000元多元社團活動加入格上上104搜尋：台灣格上租車0123456789';
+
+// 節奏：180 BPM，每拍 10 格；畫面切換都落在拍點上
+export const BEAT = 10;
+
+export const QR_URL = 'https://www.104.com.tw/company/5lwuqew';

@@ -6,7 +6,8 @@
   "scripts": {
     "studio": "remotion studio src/index.jsx",
     "render": "remotion render src/index.jsx CarplusRecruit out/carplus-recruit-15s.mp4",
-    "render:sample": "remotion render src/index.jsx CarplusRecruit out/sample-0-5s.mp4 --frames=0-149"
+    "render:sample": "remotion render src/index.jsx CarplusRecruit out/sample-0-5s.mp4 --frames=0-149",
+    "beat": "node scripts/make-beat.mjs"
   },
   "dependencies": {
     "@fontsource/noto-sans-tc": "5.3.0",
