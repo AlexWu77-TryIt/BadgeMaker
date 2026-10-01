@@ -37,8 +37,10 @@ npm run beat           # 重新產生原創節奏 → public/beat.wav
 - 照片只用裁切遮罩做出斜邊，不做任何變形；Google Cloud 標誌已模糊、暖身照右側講師已裁掉
 
 ```bash
-npx remotion render src/index.jsx SportsDay out/sportsday-sample-0-5s.mp4 --frames=0-149
+npx remotion render src/index.jsx SportsDay out/sportsday-15s.mp4
 ```
 
-- [x] 0–5 秒樣片（標題、超過 150 人參加、一起動起來）
-- [ ] 5–15 秒（等樣片確認）
+- [x] 0–3.7 秒 標題、超過 150 人參加
+- [x] 3.7–10.7 秒 一起動起來／同心協力／全力以赴（照片＋影片）
+- [x] 10.7–12.3 秒 五心（依序掃過五面旗）
+- [x] 12.3–15 秒 心動不如馬上行動、加入移動服務團隊、Logo、QR Code、上 104 搜尋：格上租車
