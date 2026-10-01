@@ -1,2 +1,5 @@
 node_modules/
 out/
+
+# 活動照片、影片、Logo：不可上傳 GitHub
+public/event/

@@ -27,3 +27,18 @@ npm run beat           # 重新產生原創節奏 → public/beat.wav
 - [x] 13–15 秒 結尾（上 104 搜尋：台灣格上租車＋QR Code；Logo 暫不放）
 - [x] 原創節奏（暫用）
 - [ ] Logo（待提供）
+
+---
+
+# 第二支：2026 五心相IN運動會（Composition：`SportsDay`）
+
+- 素材（照片、影片、Logo）放在 `public/event/`，**已設定不上傳 GitHub**；換電腦時需重新放入
+- 分鏡時間在 `src/sportsday/timing.js`；原創節奏 `npm run beat:sportsday` → `public/beat-sportsday.wav`
+- 照片只用裁切遮罩做出斜邊，不做任何變形；Google Cloud 標誌已模糊、暖身照右側講師已裁掉
+
+```bash
+npx remotion render src/index.jsx SportsDay out/sportsday-sample-0-5s.mp4 --frames=0-149
+```
+
+- [x] 0–5 秒樣片（標題、超過 150 人參加、一起動起來）
+- [ ] 5–15 秒（等樣片確認）
